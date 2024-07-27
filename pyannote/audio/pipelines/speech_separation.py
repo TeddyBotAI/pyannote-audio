@@ -607,52 +607,52 @@ class SpeechSeparation(SpeakerDiarizationMixin, Pipeline):
         )
         # zero-out sources when speaker is inactive
         # WARNING: this should be rewritten to avoid huge memory consumption
-        if self.separation.leakage_removal:
-            asr_collar_frames = int(
-                self._segmentation.model.num_frames(
-                    self.separation.asr_collar * self._audio.sample_rate
-                )
-            )
-            if asr_collar_frames > 0:
-                for i in range(discrete_diarization.data.shape[1]):
-                    speaker_activation = discrete_diarization.data.T[i]
-                    non_silent = np.where(speaker_activation != 0)[0]
-                    remaining_gaps = np.where(
-                        np.diff(non_silent) > 2 * asr_collar_frames
-                    )[0]
-                    remaining_zeros = [
-                        np.arange(
-                            non_silent[gap] + asr_collar_frames,
-                            non_silent[gap + 1] - asr_collar_frames,
-                        )
-                        for gap in remaining_gaps
-                    ]
-                    # edge cases of long silent regions in beginning or end of audio
-                    if non_silent[0] > asr_collar_frames:
-                        remaining_zeros = [
-                            np.arange(0, non_silent[0] - asr_collar_frames)
-                        ] + remaining_zeros
-                    if non_silent[-1] < speaker_activation.shape[0] - asr_collar_frames:
-                        remaining_zeros = remaining_zeros + [
-                            np.arange(
-                                non_silent[-1] + asr_collar_frames,
-                                speaker_activation.shape[0],
-                            )
-                        ]
+        # if self.separation.leakage_removal:
+        #     asr_collar_frames = int(
+        #         self._segmentation.model.num_frames(
+        #             self.separation.asr_collar * self._audio.sample_rate
+        #         )
+        #     )
+        #     if asr_collar_frames > 0:
+        #         for i in range(discrete_diarization.data.shape[1]):
+        #             speaker_activation = discrete_diarization.data.T[i]
+        #             non_silent = np.where(speaker_activation != 0)[0]
+        #             remaining_gaps = np.where(
+        #                 np.diff(non_silent) > 2 * asr_collar_frames
+        #             )[0]
+        #             remaining_zeros = [
+        #                 np.arange(
+        #                     non_silent[gap] + asr_collar_frames,
+        #                     non_silent[gap + 1] - asr_collar_frames,
+        #                 )
+        #                 for gap in remaining_gaps
+        #             ]
+        #             # edge cases of long silent regions in beginning or end of audio
+        #             if non_silent[0] > asr_collar_frames:
+        #                 remaining_zeros = [
+        #                     np.arange(0, non_silent[0] - asr_collar_frames)
+        #                 ] + remaining_zeros
+        #             if non_silent[-1] < speaker_activation.shape[0] - asr_collar_frames:
+        #                 remaining_zeros = remaining_zeros + [
+        #                     np.arange(
+        #                         non_silent[-1] + asr_collar_frames,
+        #                         speaker_activation.shape[0],
+        #                     )
+        #                 ]
 
-                    speaker_activation_with_context = np.ones(
-                        len(speaker_activation), dtype=float
-                    )
+        #             speaker_activation_with_context = np.ones(
+        #                 len(speaker_activation), dtype=float
+        #             )
 
-                    speaker_activation_with_context[np.concatenate(remaining_zeros)] = (
-                        0.0
-                    )
+        #             speaker_activation_with_context[np.concatenate(remaining_zeros)] = (
+        #                 0.0
+        #             )
 
-                    discrete_diarization.data.T[i] = speaker_activation_with_context
-            num_sources = sources.data.shape[1]
-            sources.data = (
-                sources.data * discrete_diarization.align(sources).data[:, :num_sources]
-            )
+        #             discrete_diarization.data.T[i] = speaker_activation_with_context
+        #     num_sources = sources.data.shape[1]
+        #     sources.data = (
+        #         sources.data * discrete_diarization.align(sources).data[:, :num_sources]
+        #     )
 
         # convert to continuous diarization
         diarization = self.to_annotation(
